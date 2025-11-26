@@ -1,8 +1,5 @@
 {
-  flake.modules.nixos.base = {
-    config,
-    ...
-  }: {
+  flake.modules.nixos.base = {config, ...}: {
     networking = {
       hostName = config.my.hostname;
       networkmanager.enable = true;
