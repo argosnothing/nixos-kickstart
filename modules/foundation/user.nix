@@ -19,7 +19,12 @@ in {
       config = {
         programs.fish.enable = true;
         users = {
+          # It's up to you to figure out how you want to secure your system
+          # For now, enjoy. 
+          mutableUsers = false;
+          root.initialPassword = "password";
           users.${username} = {
+            initialPassword = "password";
             isNormalUser = true;
             extraGroups = ["networkmanager" "wheel" "input" "plugdev" "dialout" "seat"];
           };
