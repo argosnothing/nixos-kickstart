@@ -18,7 +18,6 @@
         "rd.udev.log_priority=3"
         "vt.global_cursor_default=0" # optional, hides blinking cursor
       ];
-      kernel.sysctl."kernel.printk" = "3 3 3 3";
     };
   };
 }
