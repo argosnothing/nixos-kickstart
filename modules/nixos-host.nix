@@ -17,4 +17,11 @@ in {
       xfce # Here is a simple module to get you started with making your own!
     ];
   };
+  flake.modules.nixos.vm = {config, ...}: let
+    inherit (config.my) host;
+  in {
+    my.host.is-vm = true;
+    # for now just do whatever the base host does
+    imports = with flake.modules.nixos; [nixos];
+  };
 }

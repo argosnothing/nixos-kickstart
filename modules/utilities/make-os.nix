@@ -30,6 +30,7 @@
       modules = [
         "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
         config.flake.modules.nixos.base
+        config.flake.modules.nixos.iso
         config.flake.modules.nixos.${cls}
         config.flake.modules.nixos.${name}
         {
@@ -40,7 +41,6 @@
             allowUnfree = true;
             showAliases = true;
           };
-          # ISO-specific configuration
           isoImage.squashfsCompression = "gzip -Xcompression-level 1";
         }
       ];
