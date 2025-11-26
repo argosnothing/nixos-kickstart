@@ -18,6 +18,9 @@
       url = "github:tonybanters/oxwm";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    systems = {
+      url = "github:nix-systems/default";
+    };
   };
 
   outputs = inputs:

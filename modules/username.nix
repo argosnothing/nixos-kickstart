@@ -1,3 +1,1 @@
-{
-  flake.settings.username = "set username here";
-}
+{flake.settings.username = "set username here";}
