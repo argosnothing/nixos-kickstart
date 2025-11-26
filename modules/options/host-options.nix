@@ -3,6 +3,8 @@
   inherit (lib.types) str;
 in {
   flake.modules.nixos.base = {
-    hostname = mkOption {type = str;};
+    options.my = {
+      hostname = mkOption {type = str;};
+    };
   };
 }

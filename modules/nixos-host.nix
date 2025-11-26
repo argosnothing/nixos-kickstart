@@ -9,6 +9,7 @@ in {
   # this example is for nixos, defined here as the last property below.
   flake.modules.nixos.nixos = {
     imports = with config.flake.modules.nixos; [
+      base
       # Choose `grub` or `uefi` module for firmware
       xfce # Here is a simple module to get you started with making your own!
     ];

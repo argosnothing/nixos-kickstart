@@ -11,9 +11,5 @@
 
     time.timeZone = "America/New_York";
     i18n.defaultLocale = "en_US.UTF-8";
-
-    my.persist.root.directories = [
-      "/etc/NetworkManager/system-connections"
-    ];
   };
 }
