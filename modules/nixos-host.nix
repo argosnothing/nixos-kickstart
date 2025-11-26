@@ -8,9 +8,12 @@ in {
   # flake.modules.nixos.base = {} and that'll get ran for every host
   # this example is for nixos, defined here as the last property below.
   flake.modules.nixos.nixos = {
-    imports = with config.flake.modules.nixos; [
-      base
+    # You can also do any system-level configuration in here if you don't want to rely on modules
+
+    imports = with flake.modules.nixos; [
+      # In here add other modules you've created under flake.modules.nixos.modulename as `modulename`
       # Choose `grub` or `uefi` module for firmware
+      # grub
       xfce # Here is a simple module to get you started with making your own!
     ];
   };
