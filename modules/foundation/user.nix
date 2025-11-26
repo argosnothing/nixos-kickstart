@@ -6,21 +6,12 @@ in {
       lib,
       pkgs,
       ...
-    }: let
-      inherit (lib) types mkOption;
-      inherit (types) str;
-    in {
-      options.user = {
-        name = mkOption {
-          type = str;
-          default = username;
-        };
-      };
+    }: {
       config = {
         programs.fish.enable = true;
         users = {
           # It's up to you to figure out how you want to secure your system
-          # For now, enjoy. 
+          # For now, enjoy.
           mutableUsers = false;
           root.initialPassword = "password";
           users.${username} = {
