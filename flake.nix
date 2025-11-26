@@ -14,10 +14,6 @@
     import-tree = {
       url = "github:vic/import-tree";
     };
-    oxwm = {
-      url = "github:tonybanters/oxwm";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     systems = {
       url = "github:nix-systems/default";
     };
