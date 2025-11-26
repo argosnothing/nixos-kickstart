@@ -13,7 +13,7 @@ in {
     imports = with flake.modules.nixos; [
       # In here add other modules you've created under flake.modules.nixos.modulename as `modulename`
       # Choose `grub` or `uefi` module for firmware
-      # grub
+      grub
       xfce # Here is a simple module to get you started with making your own!
     ];
   };
