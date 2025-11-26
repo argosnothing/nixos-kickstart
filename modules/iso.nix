@@ -6,9 +6,9 @@ in {
 
   flake.modules.nixos.iso = {pkgs, ...}: {
     environment.systemPackages = [
-      gh
-      tmux
-      vim
+      pkgs.gh
+      pkgs.tmux
+      pkgs.vim
       (pkgs.writeScriptBin "nixos-kickstart-install" (builtins.readFile ../install.sh))
     ];
   };
