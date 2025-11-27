@@ -1,0 +1,266 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+function yesno() {
+    local prompt="$1"
+    while true; do
+        read -rp "$prompt [y/n] " yn
+        case $yn in
+            [Yy]* ) echo "y"; return;;
+            [Nn]* ) echo "n"; return;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+}
+
+COMMAND="${1:-}"
+CONFIG_DIR="$PWD/nixos-config"
+CONFIG_MARKER="$CONFIG_DIR/.kickstart-cloned"
+
+if [[ "$COMMAND" == "edit" ]]; then
+    read -rp "Enter repo URL (default: github:argosnothing/nixos-kickstart): " repo
+    repo="${repo:-github:argosnothing/nixos-kickstart}"
+    
+    read -rp "Enter git branch/rev (default: main): " git_rev
+    git_rev="${git_rev:-main}"
+    
+    if [[ -d "$CONFIG_DIR" ]]; then
+        overwrite=$(yesno "Directory $CONFIG_DIR already exists. Overwrite?")
+        if [[ $overwrite == "y" ]]; then
+            rm -rf "$CONFIG_DIR"
+        else
+            exit 0
+        fi
+    fi
+    
+    echo "Cloning $repo (${git_rev})..."
+    nix-shell -p git --run "git clone https://${repo#github:}.git $CONFIG_DIR"
+    cd "$CONFIG_DIR"
+    nix-shell -p git --run "git checkout $git_rev"
+    touch "$CONFIG_MARKER"
+    
+    cat << NEXT_STEPS
+
+Repository cloned to $CONFIG_DIR
+
+Edit your configuration:
+  cd $CONFIG_DIR
+  nano modules/username.nix
+  nano modules/nixos-host.nix
+
+When ready to install:
+  kickstart install
+
+NEXT_STEPS
+    exit 0
+fi
+
+if [[ "$COMMAND" == "install" ]]; then
+    if [[ -f "$CONFIG_MARKER" ]]; then
+        echo "Using local configuration from $CONFIG_DIR"
+        FLAKE_PATH="$CONFIG_DIR"
+        USE_LOCAL=true
+    else
+        read -rp "Enter flake URL (default: github:argosnothing/nixos-kickstart): " repo
+        repo="${repo:-github:argosnothing/nixos-kickstart}"
+        FLAKE_PATH="$repo"
+        USE_LOCAL=false
+    fi
+    
+    cat << Introduction
+The *entire* disk will be formatted with a 1GB boot partition
+(labelled NIXBOOT), 16GB of swap, and the rest allocated to ZFS.
+
+The following ZFS datasets will be created:
+    - zroot/root (mounted at / with blank snapshot)
+    - zroot/nix (mounted at /nix)
+    - zroot/tmp (mounted at /tmp)
+    - zroot/persist (mounted at /persist)
+    - zroot/cache (mounted at /cache)
+
+** IMPORTANT **
+This script assumes that the relevant "fileSystems" are declared within the
+NixOS config to be installed. It does not create any hardware configuration
+or modify the NixOS config to be installed in any way. If you have not done
+so, you will need to add the necessary zfs options and filesystems before
+proceeding or your install WILL NOT BOOT.
+
+Introduction
+
+    if [[ -b "/dev/vda" ]]; then
+        DISK="/dev/vda"
+    else
+        lsblk
+        mapfile -t disks < <(lsblk -ndo NAME,SIZE,MODEL)
+        echo -e "\nAvailable disks:\n"
+        for i in "${!disks[@]}"; do
+            printf "%d) %s\n" $((i+1)) "${disks[i]}"
+        done
+        while true; do
+            echo ""
+            read -rp "Enter the number of the disk to install to: " selection
+            if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le ${#disks[@]} ]; then
+                break
+            else
+                echo "Invalid selection. Please try again."
+            fi
+        done
+        DISK="/dev/$(echo "${disks[$selection-1]}" | awk '{print $1}')"
+    fi
+    
+    if [[ "$DISK" =~ "nvme" ]]; then
+        BOOTDISK="${DISK}p3"
+        SWAPDISK="${DISK}p2"
+        ZFSDISK="${DISK}p1"
+    else
+        BOOTDISK="${DISK}3"
+        SWAPDISK="${DISK}2"
+        ZFSDISK="${DISK}1"
+    fi
+    
+    echo "Boot Partition: $BOOTDISK"
+    echo "SWAP Partition: $SWAPDISK"
+    echo "ZFS Partition: $ZFSDISK"
+    echo ""
+    
+    do_format=$(yesno "This irreversibly formats the entire disk. Are you sure?")
+    if [[ $do_format == "n" ]]; then
+        exit
+    fi
+    
+    echo "Creating partitions"
+    sudo blkdiscard -f "$DISK"
+    sudo sgdisk --clear "$DISK"
+    sudo sgdisk -n3:1M:+1G -t3:EF00 "$DISK"
+    sudo sgdisk -n2:0:+16G -t2:8200 "$DISK"
+    sudo sgdisk -n1:0:0 -t1:BF01 "$DISK"
+    sudo sgdisk -p "$DISK" > /dev/null
+    sleep 5
+    
+    echo "Creating Swap"
+    sudo mkswap "$SWAPDISK" --label "SWAP"
+    sudo swapon "$SWAPDISK"
+    
+    echo "Creating Boot Disk"
+    sudo mkfs.fat -F 32 "$BOOTDISK" -n NIXBOOT
+    
+    use_encryption=$(yesno "Use encryption? (Encryption must also be enabled within host config with boot.zfs.requestEncryptionCredentials = true)")
+    if [[ $use_encryption == "y" ]]; then
+        encryption_options=(-O encryption=aes-256-gcm -O keyformat=passphrase -O keylocation=prompt)
+    else
+        encryption_options=()
+    fi
+    
+    echo "Creating base zpool"
+    sudo zpool create -f \
+        -o ashift=12 \
+        -o autotrim=on \
+        -O compression=zstd \
+        -O acltype=posixacl \
+        -O atime=off \
+        -O xattr=sa \
+        -O normalization=formD \
+        -O mountpoint=none \
+        "${encryption_options[@]}" \
+        zroot "$ZFSDISK"
+    
+    echo "Creating /"
+    sudo zfs create -o mountpoint=legacy zroot/root
+    sudo zfs snapshot zroot/root@blank
+    sudo mount -t zfs zroot/root /mnt
+    
+    echo "Mounting /boot (efi)"
+    sudo mount --mkdir "$BOOTDISK" /mnt/boot
+    
+    echo "Creating /nix"
+    sudo zfs create -o mountpoint=legacy zroot/nix
+    sudo mount --mkdir -t zfs zroot/nix /mnt/nix
+    
+    echo "Creating /tmp"
+    sudo zfs create -o mountpoint=legacy zroot/tmp
+    sudo mount --mkdir -t zfs zroot/tmp /mnt/tmp
+    
+    echo "Creating /cache"
+    sudo zfs create -o mountpoint=legacy zroot/cache
+    sudo mount --mkdir -t zfs zroot/cache /mnt/cache
+    
+    restore_snapshot=$(yesno "Do you want to restore from a persist snapshot?")
+    if [[ $restore_snapshot == "y" ]]; then
+        echo "Enter full path to snapshot: "
+        read -r snapshot_file_path
+        echo
+        echo "Creating /persist"
+        sudo zfs receive -o mountpoint=legacy zroot/persist < "$snapshot_file_path"
+    else
+        echo "Creating /persist"
+        sudo zfs create -o mountpoint=legacy zroot/persist
+    fi
+    sudo mount --mkdir -t zfs zroot/persist /mnt/persist
+    
+    read -rp "Which host to install? (default: nixos): " host
+    host="${host:-nixos}"
+    
+    if [[ "$host" != "nixos" && "$host" != "vm" ]]; then
+        host_configured=$(yesno "Is host '$host' already configured in your flake?")
+        if [[ $host_configured == "n" ]]; then
+            cat << HOSTINFO
+
+To add a new host configuration:
+
+1. Create a new file: modules/${host}-host.nix
+2. Define your host module similar to modules/nixos-host.nix
+3. Add it to modules/nixosConfigurations.nix:
+   
+   flake.nixosConfigurations = {
+     $host = linux "$host";
+   };
+
+After configuring your host, run this command again.
+
+HOSTINFO
+            exit 0
+        fi
+    fi
+    
+    if [[ $USE_LOCAL == false ]]; then
+        read -rp "Enter git rev for flake (default: main): " git_rev
+        FLAKE_REF="$FLAKE_PATH/${git_rev:-main}#$host"
+    else
+        FLAKE_REF="$FLAKE_PATH#$host"
+    fi
+    
+    echo "Installing NixOS"
+    sudo nixos-install --flake "$FLAKE_REF" --option tarball-ttl 0
+    
+    if [[ -f "$CONFIG_DIR/modules/username.nix" ]]; then
+        username=$(grep 'flake.settings.username' "$CONFIG_DIR/modules/username.nix" | sed 's/.*= "\(.*\)".*/\1/')
+    else
+        read -rp "Enter username for installed system: " username
+    fi
+    
+    echo "Copying configuration to installed system..."
+    if [[ $USE_LOCAL == true ]]; then
+        sudo cp -r "$CONFIG_DIR" "/mnt/home/$username/nixos-kickstart"
+        sudo chown -R 1000:100 "/mnt/home/$username/nixos-kickstart"
+    else
+        sudo mkdir -p "/mnt/home/$username"
+        nix-shell -p git --run "sudo git clone https://${FLAKE_PATH#github:}.git /mnt/home/$username/nixos-kickstart"
+        if [[ -n "${git_rev:-}" ]]; then
+            cd "/mnt/home/$username/nixos-kickstart"
+            nix-shell -p git --run "sudo git checkout ${git_rev}"
+        fi
+        sudo chown -R 1000:100 "/mnt/home/$username/nixos-kickstart"
+    fi
+    
+    echo "Installation complete. It is now safe to reboot."
+    exit 0
+fi
+
+echo "Usage: kickstart [edit|install]"
+echo ""
+echo "  edit    - Clone config repo for customization"
+echo "  install - Install NixOS (uses local config if available)"
+exit 1

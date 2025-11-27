@@ -6,10 +6,10 @@
 }: let
   inherit (config) flake;
 in {
-  flake.modules.nixos.base = {pkgs}: {
+  flake.modules.nixos.base = {pkgs, ...}: {
     imports = [
       inputs.hjem.nixosModules.default
-      (lib.mkAliasModule ["hj"] ["hjem" "users" flake.settings.username])
+      (lib.mkAliasOptionModule ["hj"] ["hjem" "users" flake.settings.username])
     ];
     hjem.linker = inputs.hjem.packages.${pkgs.stdenv.hostPlatform.system}.smfh;
     hj = {

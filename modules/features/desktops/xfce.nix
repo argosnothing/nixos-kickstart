@@ -14,18 +14,17 @@
 
     fonts = {
       packages = with pkgs; [
-        noto-fonts
-        noto-fonts-cjk-sans
-        noto-fonts-cjk-serif
-        noto-fonts-color-emoji
-        liberation_ttf
-        dejavu_fonts
+        pkgs.cascadia-code
+        pkgs.google-fonts
+        nerd-fonts.noto
+        nerd-fonts.symbols-only
+        font-awesome
       ];
       fontconfig = {
         defaultFonts = {
-          serif = ["Noto Serif"];
-          sansSerif = ["Noto Sans"];
-          monospace = ["DejaVu Sans Mono"];
+          serif = ["Alegreya Serif"];
+          sansSerif = ["Noto Serif"];
+          monospace = ["Cascadia Code"];
         };
       };
     };

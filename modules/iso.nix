@@ -10,6 +10,7 @@ in {
       pkgs.tmux
       pkgs.vim
       (pkgs.writeScriptBin "nixos-kickstart-install" (builtins.readFile ../install.sh))
+      (pkgs.writeScriptBin "kickstart" (builtins.readFile ../kickstart.sh))
     ];
   };
 }
