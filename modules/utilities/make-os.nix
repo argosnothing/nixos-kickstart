@@ -4,13 +4,14 @@
   lib,
   ...
 }: let
+  inherit (config) flake;
   mkNixos = system: cls: name:
     inputs.nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
-        config.flake.modules.nixos.base
-        config.flake.modules.nixos.${cls}
-        config.flake.modules.nixos.${name}
+        flake.modules.nixos.base
+        flake.modules.nixos.${cls}
+        flake.modules.nixos.${name}
         {
           my.hostname = name;
           networking.hostName = lib.mkDefault name;
@@ -24,18 +25,17 @@
       ];
     };
 
-  mkIso = system: cls: name:
+  mkIso = system:
     inputs.nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
         "${inputs.nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-        config.flake.modules.nixos.base
-        config.flake.modules.nixos.iso
-        config.flake.modules.nixos.${cls}
-        config.flake.modules.nixos.${name}
+        flake.modules.nixos.base
+        flake.modules.nixos.iso
+        flake.modules.nixos.kickstart
         {
-          my.hostname = name;
-          networking.hostName = lib.mkDefault name;
+          my.hostname = "kickstart";
+          networking.hostName = lib.mkDefault "kickstart";
           nixpkgs.hostPlatform = lib.mkDefault system;
           nixpkgs.config = {
             allowUnfree = true;
@@ -47,7 +47,7 @@
     };
 
   linux = mkNixos "x86_64-linux" "nixos";
-  isoLinux = mkIso "x86_64-linux" "nixos";
+  isoLinux = mkIso "x86_64-linux";
 in {
   flake.lib.mk-os = {
     inherit mkNixos mkIso;
