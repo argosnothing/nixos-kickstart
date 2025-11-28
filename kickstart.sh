@@ -47,6 +47,7 @@ if [[ "$COMMAND" == "edit" ]]; then
 Edit
     read -rp "Enter local config name (default:nixos-kickstart): " local_name
     local_name="${local_name:-nixos-kickstart}"
+    kv_set "LOCAL_NAME" "$local_name"
     kv_set "CONFIG_DIR" "$PWD/$local_name"
     kv_set "CONFIG_MARKER" "$(kv_get CONFIG_DIR)/.kickstart-cloned"
     read -rp "Enter repo URL (default: github.com/argosnothing/nixos-kickstart): " repo
@@ -70,9 +71,17 @@ Edit
     nix-shell -p git --run "git checkout $(kv_get GIT_REV)"
     touch "$(kv_get CONFIG_MARKER)"
     
+    if [[ "$local_name" != "nixos-kickstart" ]]; then
+        sed -i "s/nixos-kickstart/$local_name/g" "$(kv_get CONFIG_DIR)/modules/+configname.nix"
+        configname_msg="  NOTE: Updated modules/+configname.nix with custom name: $local_name"
+    else
+        configname_msg=""
+    fi
+    
     cat << NEXT_STEPS
 
     Repository cloned to $(kv_get CONFIG_DIR)
+    $configname_msg
 
   Edit your configuration:
   cd $(kv_get CONFIG_DIR)
@@ -269,8 +278,9 @@ HOSTINFO
     
     echo "Copying configuration to installed system..."
     if [[ $USE_LOCAL == true ]]; then
-        sudo cp -r "$CONFIG_DIR" "/mnt/home/$username/nixos-kickstart"
-        sudo chown -R 1000:100 "/mnt/home/$username/nixos-kickstart"
+        local_name="$(kv_get LOCAL_NAME)"
+        sudo cp -r "$CONFIG_DIR" "/mnt/home/$username/$local_name"
+        sudo chown -R 1000:100 "/mnt/home/$username/$local_name"
     else
         sudo mkdir -p "/mnt/home/$username"
         nix-shell -p git --run "sudo git clone https://${FLAKE_PATH#github:}.git /mnt/home/$username/nixos-kickstart"
