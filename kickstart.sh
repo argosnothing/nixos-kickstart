@@ -17,7 +17,7 @@ function yesno() {
 }
 
 COMMAND="${1:-}"
-CONFIG_DIR="$PWD/nixos-config"
+CONFIG_DIR="$PWD/nixos-kickstart
 CONFIG_MARKER="$CONFIG_DIR/.kickstart-cloned"
 
 if [[ "$COMMAND" == "edit" ]]; then
