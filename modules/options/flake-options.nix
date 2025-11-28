@@ -3,6 +3,7 @@
   config,
   ...
 }: let
+  inherit (config) flake;
   inherit (lib) mkOption;
   inherit (lib.types) str;
 in {
@@ -15,7 +16,7 @@ in {
     flakedir = mkOption {
       description = "Absolute path to where flake is, don't change.";
       type = str;
-      default = "/home/${config.flake.settings.username}/nixos-config";
+      default = "/home/${config.flake.settings.username}/${flake.settings.configname}";
     };
     networking.hostId = mkOption {
       description = "Host Id";

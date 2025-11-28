@@ -113,7 +113,7 @@ if [[ "$COMMAND" == "install" ]]; then
         FLAKE_PATH="$repo"
         USE_LOCAL=false
     fi
-    if [[ "$(kv_get IS_PRE_FORMAT)" == "true" ]]
+    if [[ "$(kv_get IS_PRE_FORMAT)" == "true" ]]; then
     cat << Introduction
 The *entire* disk will be formatted with a 1GB boot partition
 (labelled NIXBOOT), 16GB of swap, and the rest allocated to ZFS.
