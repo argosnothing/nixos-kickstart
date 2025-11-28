@@ -4,6 +4,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+COMMAND="${1:-}"
+
 function yesno() {
     local prompt="$1"
     while true; do
@@ -16,9 +18,25 @@ function yesno() {
     done
 }
 
-COMMAND="${1:-}"
-CONFIG_DIR=""
-CONFIG_MARKER=""
+
+STATE_FILE="kickstart.json"
+if [[ ! -f "$STATE_FILE" || ! -s "$STATE_FILE" ]]; then
+    echo '{}' > "$STATE_FILE"
+fi
+
+function kv_set() {
+    local key="$1"
+    local value="$2"
+
+    jq --arg k "$key" --arg v "$value" \
+        '.[$k] = $v' "$STATE_FILE" > "${STATE_FILE}.tmp" \
+        && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+}
+
+function kv_get() {
+    local key="$1"
+    jq -r --arg k "$key" '.[$k] // empty' "$STATE_FILE"
+}
 
 if [[ "$COMMAND" == "edit" ]]; then
     cat << Edit
@@ -28,35 +46,35 @@ if [[ "$COMMAND" == "edit" ]]; then
 Edit
     read -rp "Enter local config name (default:nixos-kickstart): " local_name
     local_name="${local_name:-nixos-kickstart}"
-    CONFIG_DIR="$PWD/$local_name"
-    CONFIG_MARKER="$CONFIG_DIR/.kickstart-cloned"
+    kv_set "CONFIG_DIR" "${PWD/local_name}"
+    kv_set "CONFIG_MARKER" "$(kv_get CONFIG_DIR)/.kickstart-cloned"
     read -rp "Enter repo URL (default: github.com/argosnothing/nixos-kickstart): " repo
-    repo="${repo:-github.com/argosnothing/nixos-kickstart}"
+    kv_set "REPO" "${repo:-github.com/argosnothing/nixos-kickstart}"
     
     read -rp "Enter git branch/rev (default: main): " git_rev
-    git_rev="${git_rev:-main}"
+    kv_set "GIT_REV" "${git_rev:-main}"
     
-    if [[ -d "$CONFIG_DIR" ]]; then
-        overwrite=$(yesno "Directory $CONFIG_DIR already exists. Overwrite?")
+    if [[ -d "$(kv_get CONFIG_DIR)" ]]; then
+        overwrite=$(yesno "Directory $(kv_get CONFIG_DIR) already exists. Overwrite?")
         if [[ $overwrite == "y" ]]; then
-            rm -rf "$CONFIG_DIR"
+            rm -rf "$(kv_get CONFIG_DIR)"
         else
             exit 0
         fi
     fi
     
-    echo "Cloning $repo (${git_rev})..."
-    nix-shell -p git --run "git clone https://${repo#github:}.git $CONFIG_DIR"
-    cd "$CONFIG_DIR"
-    nix-shell -p git --run "git checkout $git_rev"
-    touch "$CONFIG_MARKER"
+    echo "Cloning $(kv_get REPO) ($(kv_get GIT_REV))..."
+    nix-shell -p git --run "git clone https://$(kv_get REPO).git $(kv_get CONFIG_DIR)"
+    cd "$(kv_get CONFIG_DIR)"
+    nix-shell -p git --run "git checkout $(kv_get GIT_REV)"
+    touch "$(kv_get CONFIG_MARKER)"
     
     cat << NEXT_STEPS
 
-Repository cloned to $CONFIG_DIR
+    Repository cloned to $(kv_get CONFIG_DIR)
 
-Edit your configuration:
-  cd $CONFIG_DIR
+  Edit your configuration:
+  cd $(kv_get CONFIG_DIR)
   nano modules/username.nix
   nano modules/nixos-host.nix
 
@@ -66,6 +84,21 @@ When ready to install:
 NEXT_STEPS
     exit 0
 fi
+
+
+if [[ "$COMMAND" == "test" ]]; then
+    if [[ -f "$CONFIG_MARKER" ]]; then
+        echo "Using local configuration from $CONFIG_DIR"
+        FLAKE_PATH="$CONFIG_DIR"
+        USE_LOCAL=true
+    else
+        read -rp "Enter flake URL (default: github:argosnothing/nixos-kickstart): " repo
+        repo="${repo:-github:argosnothing/nixos-kickstart}"
+        FLAKE_PATH="$repo"
+        USE_LOCAL=false
+    fi
+fi
+    
 
 if [[ "$COMMAND" == "install" ]]; then
     if [[ -f "$CONFIG_MARKER" ]]; then
