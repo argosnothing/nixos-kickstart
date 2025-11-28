@@ -17,10 +17,19 @@ function yesno() {
 }
 
 COMMAND="${1:-}"
-CONFIG_DIR="$PWD/nixos-kickstart
-CONFIG_MARKER="$CONFIG_DIR/.kickstart-cloned"
+CONFIG_DIR=""
+CONFIG_MARKER=""
 
 if [[ "$COMMAND" == "edit" ]]; then
+    cat << Edit
+    This option allows you to copy down your own forked kickstart repository, or copy down the main kickstart
+    repository to then make your own edits. If you want you can also fork it using the included browser and pull that down.
+    You can also provide your own name for the folder. This folder will live in your home directory under that name.
+Edit
+    read -rp "Enter local config name (default:nixos-kickstart): " local_name
+    local_name="${local_name:-nixos-kickstart}"
+    CONFIG_DIR="$PWD/$local_name"
+    CONFIG_MARKER="$CONFIG_DIR/.kickstart-cloned"
     read -rp "Enter repo URL (default: github.com/argosnothing/nixos-kickstart): " repo
     repo="${repo:-github.com/argosnothing/nixos-kickstart}"
     
