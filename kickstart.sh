@@ -21,8 +21,8 @@ CONFIG_DIR="$PWD/nixos-config"
 CONFIG_MARKER="$CONFIG_DIR/.kickstart-cloned"
 
 if [[ "$COMMAND" == "edit" ]]; then
-    read -rp "Enter repo URL (default: github:argosnothing/nixos-kickstart): " repo
-    repo="${repo:-github:argosnothing/nixos-kickstart}"
+    read -rp "Enter repo URL (default: github.com/argosnothing/nixos-kickstart): " repo
+    repo="${repo:-github.com/argosnothing/nixos-kickstart}"
     
     read -rp "Enter git branch/rev (default: main): " git_rev
     git_rev="${git_rev:-main}"
