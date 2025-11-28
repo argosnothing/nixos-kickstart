@@ -87,7 +87,7 @@ fi
 
 
 if [[ "$COMMAND" == "test" ]]; then
-    if [[ -f "$CONFIG_MARKER" ]]; then
+    if [[ -f "$(kv_get CONFIG_MARKER)" ]]; then
         echo "Using local configuration from $CONFIG_DIR"
         FLAKE_PATH="$CONFIG_DIR"
         USE_LOCAL=true
