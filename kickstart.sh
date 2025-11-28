@@ -18,8 +18,8 @@ function yesno() {
     done
 }
 
-
-STATE_FILE="kickstart.json"
+# This code provides state between editing and installing.
+STATE_FILE="$PWD/kickstart.json"
 if [[ ! -f "$STATE_FILE" || ! -s "$STATE_FILE" ]]; then
     echo '{}' > "$STATE_FILE"
 fi
@@ -39,6 +39,7 @@ function kv_get() {
 }
 
 if [[ "$COMMAND" == "edit" ]]; then
+    kv_set "IS_PRE_FORMAT" "true"
     cat << Edit
     This option allows you to copy down your own forked kickstart repository, or copy down the main kickstart
     repository to then make your own edits. If you want you can also fork it using the included browser and pull that down.
@@ -46,7 +47,7 @@ if [[ "$COMMAND" == "edit" ]]; then
 Edit
     read -rp "Enter local config name (default:nixos-kickstart): " local_name
     local_name="${local_name:-nixos-kickstart}"
-    kv_set "CONFIG_DIR" "${PWD/local_name}"
+    kv_set "CONFIG_DIR" "$PWD/$local_name"
     kv_set "CONFIG_MARKER" "$(kv_get CONFIG_DIR)/.kickstart-cloned"
     read -rp "Enter repo URL (default: github.com/argosnothing/nixos-kickstart): " repo
     kv_set "REPO" "${repo:-github.com/argosnothing/nixos-kickstart}"
@@ -88,7 +89,7 @@ fi
 
 if [[ "$COMMAND" == "test" ]]; then
     if [[ -f "$(kv_get CONFIG_MARKER)" ]]; then
-        echo "Using local configuration from $CONFIG_DIR"
+        echo "Using local configuration from $(kv_get CONFIG_DIR)"
         FLAKE_PATH="$CONFIG_DIR"
         USE_LOCAL=true
     else
@@ -101,9 +102,10 @@ fi
     
 
 if [[ "$COMMAND" == "install" ]]; then
-    if [[ -f "$CONFIG_MARKER" ]]; then
-        echo "Using local configuration from $CONFIG_DIR"
-        FLAKE_PATH="$CONFIG_DIR"
+    CONFIG_DIR="$(kv_get CONFIG_DIR)"
+    if [[ -f "$(kv_get CONFIG_MARKER)" ]]; then
+        echo "Using local configuration from $(kv_get CONFIG_DIR)"
+        FLAKE_PATH="$(kv_get CONFIG_DIR)"
         USE_LOCAL=true
     else
         read -rp "Enter flake URL (default: github:argosnothing/nixos-kickstart): " repo
@@ -111,7 +113,7 @@ if [[ "$COMMAND" == "install" ]]; then
         FLAKE_PATH="$repo"
         USE_LOCAL=false
     fi
-    
+    if [[ "$(kv_get IS_PRE_FORMAT)" == "true" ]]
     cat << Introduction
 The *entire* disk will be formatted with a 1GB boot partition
 (labelled NIXBOOT), 16GB of swap, and the rest allocated to ZFS.
@@ -241,6 +243,9 @@ Introduction
         sudo zfs create -o mountpoint=legacy zroot/persist
     fi
     sudo mount --mkdir -t zfs zroot/persist /mnt/persist
+    kv_set "IS_PRE_FORMAT" "false"
+fi
+
     
     read -rp "Which host to install? (default: nixos): " host
     host="${host:-nixos}"
