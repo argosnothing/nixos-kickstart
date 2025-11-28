@@ -87,20 +87,6 @@ NEXT_STEPS
 fi
 
 
-if [[ "$COMMAND" == "test" ]]; then
-    if [[ -f "$(kv_get CONFIG_MARKER)" ]]; then
-        echo "Using local configuration from $(kv_get CONFIG_DIR)"
-        FLAKE_PATH="$CONFIG_DIR"
-        USE_LOCAL=true
-    else
-        read -rp "Enter flake URL (default: github:argosnothing/nixos-kickstart): " repo
-        repo="${repo:-github:argosnothing/nixos-kickstart}"
-        FLAKE_PATH="$repo"
-        USE_LOCAL=false
-    fi
-fi
-    
-
 if [[ "$COMMAND" == "install" ]]; then
     CONFIG_DIR="$(kv_get CONFIG_DIR)"
     if [[ -f "$(kv_get CONFIG_MARKER)" ]]; then
@@ -191,13 +177,7 @@ Introduction
     echo "Creating Boot Disk"
     sudo mkfs.fat -F 32 "$BOOTDISK" -n NIXBOOT
     
-    use_encryption=$(yesno "Use encryption? (Encryption must also be enabled within host config with boot.zfs.requestEncryptionCredentials = true)")
-    if [[ $use_encryption == "y" ]]; then
-        encryption_options=(-O encryption=aes-256-gcm -O keyformat=passphrase -O keylocation=prompt)
-    else
-        encryption_options=()
-    fi
-    
+    encryption_options=()
     echo "Creating base zpool"
     sudo zpool create -f \
         -o ashift=12 \
@@ -245,7 +225,6 @@ Introduction
     sudo mount --mkdir -t zfs zroot/persist /mnt/persist
     kv_set "IS_PRE_FORMAT" "false"
 fi
-
     
     read -rp "Which host to install? (default: nixos): " host
     host="${host:-nixos}"
