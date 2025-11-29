@@ -14,10 +14,17 @@
         {
           my.hostname = host;
           networking.hostName = lib.mkDefault host;
-          nixpkgs.hostPlatform = lib.mkDefault system;
-          nixpkgs.config = {
-            allowUnfree = true;
-            showAliases = true;
+          nixpkgs = {
+            overlays = [
+              (_: super: {
+                inherit (super.stdenv.hostPlatform) system;
+              })
+            ];
+            hostPlatform = lib.mkDefault system;
+            config = {
+              allowUnfree = true;
+              showAliases = true;
+            };
           };
           system.stateVersion = "25.05";
         }
@@ -35,6 +42,7 @@
         {
           my.hostname = "kickstart";
           networking.hostName = lib.mkDefault "kickstart";
+
           nixpkgs.hostPlatform = lib.mkDefault system;
           nixpkgs.config = {
             allowUnfree = true;
