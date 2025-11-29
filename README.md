@@ -19,6 +19,9 @@ You can either just run `kickstart install` and you'll get the default hostname,
 
 ORRR you can be fancy and run `kickstart edit` and that'll pull down **this** repo so you can really make it your own before you even install it. Edit the config, change the host, do it all, and then when you're done, running kickstart install will instead use that local repo you edited, Just make sure to run it in your home directory.
 
+### Make your own ISO!!
+Don't want to wait on me to get my act together and provide you an iso from this page? If you have nix installed you should be able to just clone this repo, cd into it, run `nix build .#iso` and boom. Your iso is in `results/iso/somelongwork.nix`. Hell, before you do that you can just make the iso whatever you want as well, but IMO all you really need is tmux vim network manager and git for the install process, it's just two commands.
+
 ### Important stuff
 * kickstart install with no edit before hand will pull down this repo, which will install against a `grub` firmware. In the future i'll work on a smoother way to do this without having to pull down and edit, but until then you simply need to swap grub for uefi in the host-config.nix (`flake.modules.nixos.kickster` if you're not doing anything else)
 * kernel.nix has catchall for firmware support, you will probably want to slim down your kernel modules once you've gotten more acquainted with *your* config, meaning you'll need to figure out what you need for your specific hardware. 
