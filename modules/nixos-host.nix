@@ -3,9 +3,9 @@
 in {
   flake = {
     modules = {
-      nixos = {pkgs, ...}:{
+      nixos = {
         ## replace starter with your hostname
-        starter = {
+        starter = {pkgs, ...}: {
           imports = with flake.modules.nixos; [
             grub # or uefi
             xfce
