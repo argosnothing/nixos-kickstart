@@ -19,7 +19,7 @@ function yesno() {
 }
 
 # This code provides state between editing and installing.
-STATE_FILE="$PWD/kickstart.json"
+STATE_FILE="/home/kickster/kickstart.json"
 if [[ ! -f "$STATE_FILE" || ! -s "$STATE_FILE" ]]; then
     echo '{}' > "$STATE_FILE"
 fi
@@ -70,18 +70,9 @@ Edit
     cd "$(kv_get CONFIG_DIR)"
     nix-shell -p git --run "git checkout $(kv_get GIT_REV)"
     touch "$(kv_get CONFIG_MARKER)"
-    
-    if [[ "$local_name" != "nixos-kickstart" ]]; then
-        sed -i "s/nixos-kickstart/$local_name/g" "$(kv_get CONFIG_DIR)/modules/+configname.nix"
-        configname_msg="  NOTE: Updated modules/+configname.nix with custom name: $local_name"
-    else
-        configname_msg=""
-    fi
-    
     cat << NEXT_STEPS
 
     Repository cloned to $(kv_get CONFIG_DIR)
-    $configname_msg
 
   Edit your configuration:
   cd $(kv_get CONFIG_DIR)
@@ -268,9 +259,7 @@ HOSTINFO
     fi
     
     read -rp "Enter username for installed system: " username
-    if [[ "$username" != "kickster" && -f "$CONFIG_DIR/modules/+username.nix" ]]; then
-        sed -i "s/kickster/$username/g" "$CONFIG_DIR/modules/+username.nix"
-    fi
+    username="${username:-kickster}"
 
     echo "Installing NixOS"
     sudo nixos-install --flake "$FLAKE_REF" --option tarball-ttl 0
@@ -282,12 +271,12 @@ HOSTINFO
         sudo chown -R 1000:100 "/mnt/home/$username/$local_name"
     else
         sudo mkdir -p "/mnt/home/$username"
-        nix-shell -p git --run "sudo git clone https://${FLAKE_PATH#github:}.git /mnt/home/$username/nixos-kickstart"
+        nix-shell -p git --run "sudo git clone https://${FLAKE_PATH#github:}.git /mnt/home/$username/$local_name"
         if [[ -n "${git_rev:-}" ]]; then
-            cd "/mnt/home/$username/nixos-kickstart"
+            cd "/mnt/home/$username/$local_name"
             nix-shell -p git --run "sudo git checkout ${git_rev}"
         fi
-        sudo chown -R 1000:100 "/mnt/home/$username/nixos-kickstart"
+        sudo chown -R 1000:100 "/mnt/home/$username/$local_name"
     fi
     
     echo "Installation complete. It is now safe to reboot."
