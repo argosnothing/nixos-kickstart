@@ -16,7 +16,8 @@ in {
         };
         vm = {
           my.host.is-vm = true;
-          imports = with flake.modules.nixos; [nixos];
+          # 
+          imports = with flake.modules.nixos; [starter];
         };
 
         # This is the iso
