@@ -271,7 +271,7 @@ HOSTINFO
     sudo nixos-install --flake "$FLAKE_REF" --option tarball-ttl 0
     
     if [[ -f "$CONFIG_DIR/modules/username.nix" ]]; then
-        username=$(grep 'flake.settings.username' "$CONFIG_DIR/modules/username.nix" | sed 's/.*= "\(.*\)".*/\1/')
+        username=$(grep 'flake.settings.username' "$CONFIG_DIR/modules/+username.nix" | sed 's/.*= "\(.*\)".*/\1/')
     else
         read -rp "Enter username for installed system: " username
     fi
