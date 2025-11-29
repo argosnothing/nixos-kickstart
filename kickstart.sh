@@ -19,7 +19,7 @@ function yesno() {
 }
 
 # This code provides state between editing and installing.
-STATE_FILE="/home/kickster/kickstart.json"
+STATE_FILE="/home/nixos/kickstart.json"
 if [[ ! -f "$STATE_FILE" || ! -s "$STATE_FILE" ]]; then
     echo '{}' > "$STATE_FILE"
 fi
