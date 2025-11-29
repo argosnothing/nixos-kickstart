@@ -52,7 +52,6 @@ Edit
     kv_set "CONFIG_MARKER" "$(kv_get CONFIG_DIR)/.kickstart-cloned"
     read -rp "Enter repo URL (default: github.com/argosnothing/nixos-kickstart): " repo
     kv_set "REPO" "${repo:-github.com/argosnothing/nixos-kickstart}"
-    
     read -rp "Enter git branch/rev (default: main): " git_rev
     kv_set "GIT_REV" "${git_rev:-main}"
     
@@ -64,7 +63,27 @@ Edit
             exit 0
         fi
     fi
-    
+
+    read -rp "Enter username (default: kickster)" username
+    username="${username:-kickster}"
+    kv_set "USERNAME" "$username"
+
+    if [[ "$username" != "kickster" ]]; then
+    cat << USER_INFO
+You will need to go into modules/+username.nix and change the username value to $username
+USER_INFO
+    fi
+
+    read -rp "Enter hostname (defualt: starter)" hostname
+    hostname="${hostname:-starter}"
+    kv_set "HOSTNAME" "$hostname"
+    if [[ "$hostname" != "starter" ]]; then
+        cat << HOST_INFO
+        You will need to go into modules/nixos-host.nix and modules/nixosConfigurations and swap checkout
+        starter for $hostname. Also while you're in nixos-host.nix you can swap firmware modules if needed. 
+HOST_INFO
+    fi
+
     echo "Cloning $(kv_get REPO) ($(kv_get GIT_REV))..."
     nix-shell -p git --run "git clone https://$(kv_get REPO).git $(kv_get CONFIG_DIR)"
     cd "$(kv_get CONFIG_DIR)"
@@ -76,8 +95,11 @@ Edit
 
   Edit your configuration:
   cd $(kv_get CONFIG_DIR)
-  nano modules/username.nix
-  nano modules/nixos-host.nix
+  vim modules/+username.nix
+  vim modules/+nixos-host.nix
+
+  Also edit nixos-host and nixosConfigurations, you'll wanting to replace `starter` with your host name. Also
+  If you're using UEFI you'll want to use that module in nixos-host instead of the default grub one.
 
 When ready to install:
   kickstart install
@@ -226,50 +248,28 @@ Introduction
     kv_set "IS_PRE_FORMAT" "false"
 fi
     
-    read -rp "Which host to install? (default: nixos): " host
-    host="${host:-nixos}"
-    
-    if [[ "$host" != "nixos" && "$host" != "vm" ]]; then
-        host_configured=$(yesno "Is host '$host' already configured in your flake?")
-        if [[ $host_configured == "n" ]]; then
-            cat << HOSTINFO
-
-To add a new host configuration:
-
-1. Create a new file: modules/${host}-host.nix
-2. Define your host module similar to modules/nixos-host.nix
-3. Add it to modules/nixosConfigurations.nix:
-   
-   flake.nixosConfigurations = {
-     $host = linux "$host";
-   };
-
-After configuring your host, run this command again.
-
-HOSTINFO
-            exit 0
-        fi
-    fi
     
     if [[ $USE_LOCAL == false ]]; then
         read -rp "Enter git rev for flake (default: main): " git_rev
-        FLAKE_REF="$FLAKE_PATH/${git_rev:-main}#$host"
+        FLAKE_REF="$FLAKE_PATH/${git_rev:-main}#host"
     else
+        host="$(kv_get HOSTNAME)"
         FLAKE_REF="$FLAKE_PATH#$host"
     fi
     
-    read -rp "Enter username for installed system: " username
-    username="${username:-kickster}"
 
     echo "Installing NixOS"
     sudo nixos-install --flake "$FLAKE_REF" --option tarball-ttl 0
     
     echo "Copying configuration to installed system..."
     if [[ $USE_LOCAL == true ]]; then
+        username="$(kv_get USERNAME)"
         local_name="$(kv_get LOCAL_NAME)"
         sudo cp -r "$CONFIG_DIR" "/mnt/home/$username/$local_name"
         sudo chown -R 1000:100 "/mnt/home/$username/$local_name"
     else
+        username="kickster"
+        local_name="nixos-kickstart"
         sudo mkdir -p "/mnt/home/$username"
         nix-shell -p git --run "sudo git clone https://${FLAKE_PATH#github:}.git /mnt/home/$username/$local_name"
         if [[ -n "${git_rev:-}" ]]; then
