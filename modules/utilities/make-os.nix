@@ -5,16 +5,15 @@
   ...
 }: let
   inherit (config) flake;
-  mkNixos = system: cls: name:
+  mkNixos = system: host:
     inputs.nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
         flake.modules.nixos.base
-        flake.modules.nixos.${cls}
-        flake.modules.nixos.${name}
+        flake.modules.nixos.${host}
         {
-          my.hostname = name;
-          networking.hostName = lib.mkDefault name;
+          my.hostname = host;
+          networking.hostName = lib.mkDefault host;
           nixpkgs.hostPlatform = lib.mkDefault system;
           nixpkgs.config = {
             allowUnfree = true;
@@ -46,7 +45,7 @@
       ];
     };
 
-  linux = mkNixos "x86_64-linux" "nixos";
+  linux = mkNixos "x86_64-linux";
   isoLinux = mkIso "x86_64-linux";
 in {
   flake.lib.mk-os = {
