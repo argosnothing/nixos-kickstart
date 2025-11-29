@@ -79,7 +79,7 @@ USER_INFO
     kv_set "HOSTNAME" "$hostname"
     if [[ "$hostname" != "starter" ]]; then
         cat << HOST_INFO
-        You will need to go into modules/nixos-host.nix and modules/nixosConfigurations and swap checkout
+        You will need to go into modules/nixos-host.nix and modules/nixosConfigurations and swap 
         starter for $hostname. Also while you're in nixos-host.nix you can swap firmware modules if needed. 
 HOST_INFO
     fi
