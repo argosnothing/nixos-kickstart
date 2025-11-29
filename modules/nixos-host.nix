@@ -4,7 +4,7 @@ in {
   flake = {
     modules = {
       nixos = {
-        nixos = {
+        starter = {
           imports = with flake.modules.nixos; [
             grub # or uefi
             xfce

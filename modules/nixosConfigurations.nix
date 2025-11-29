@@ -8,7 +8,7 @@ in {
     # your own stuff.
     # `utilities/make-os.nix` includes the boilerplate for things like package creation, base module, etc.
     # You should need to edit `make-os.nix` but it could give you better context if you stumble somewhere
-    nixos = linux "nixos";
+    starter = linux "starter";
     vm = linux "vm";
   };
 }

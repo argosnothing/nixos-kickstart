@@ -205,8 +205,8 @@ read -rp "Enter flake URL (default: github:argosnothing/nixos-kickstart): " repo
 repo="${repo:-github:argosnothing/nixos-kickstart}"
 
 # non IynaixOS, prompt for host
-read -rp "Which host to install? (default: nixos) if you are in a vm type vm: " host
-host="${host:-nixos}"
+read -rp "Which host to install? (default: starter) if you are in a vm type vm: " host
+host="${host:-starter}"
 
 # Check if using a non-default host
 if [[ "$host" != "nixos" && "$host" != "vm" ]]; then
@@ -216,10 +216,9 @@ if [[ "$host" != "nixos" && "$host" != "vm" ]]; then
 
 To add a new host configuration:
 
-1. Create a new file: modules/${host}-host.nix
+1. addon to nixos-host.nix or just create a new file dedicated to the host
 2. Define your host module similar to modules/nixos-host.nix
 3. Add it to modules/nixosConfigurations.nix:
-   
    flake.nixosConfigurations = {
      $host = linux "$host";
    };
