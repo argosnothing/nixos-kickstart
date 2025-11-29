@@ -267,14 +267,13 @@ HOSTINFO
         FLAKE_REF="$FLAKE_PATH#$host"
     fi
     
+    read -rp "Enter username for installed system: " username
+    if [[ "$username" != "kickster" && -f "$CONFIG_DIR/modules/+username.nix" ]]; then
+        sed -i "s/kickster/$username/g" "$CONFIG_DIR/modules/+username.nix"
+    fi
+
     echo "Installing NixOS"
     sudo nixos-install --flake "$FLAKE_REF" --option tarball-ttl 0
-    
-    if [[ -f "$CONFIG_DIR/modules/username.nix" ]]; then
-        username=$(grep 'flake.settings.username' "$CONFIG_DIR/modules/+username.nix" | sed 's/.*= "\(.*\)".*/\1/')
-    else
-        read -rp "Enter username for installed system: " username
-    fi
     
     echo "Copying configuration to installed system..."
     if [[ $USE_LOCAL == true ]]; then
