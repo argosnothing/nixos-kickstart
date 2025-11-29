@@ -3,11 +3,15 @@
 in {
   flake = {
     modules = {
-      nixos = {
+      nixos = {pkgs, ...}:{
+        ## replace starter with your hostname
         starter = {
           imports = with flake.modules.nixos; [
             grub # or uefi
             xfce
+          ];
+          environment.systemPackages = with pkgs; [
+            firefox
           ];
         };
         vm = {
