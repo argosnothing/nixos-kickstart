@@ -1,5 +1,7 @@
 # Nixos KICKSTART! ZFS xxx DENDRITIC xxx HJEM
 
+## Currently only tested on hardware, still working on getting VM to work. 
+
 ## This is the starter template I wish I had when I started.
 
 NixOS is a rabbithole, and the trajectory of a config often has multiple stages, usually entailing several rewrites. When you start out, you might not know about flakes, so you change everything to use flakes. Great, now you continue working on your config and realize you should be using home manager, only to realize later you could have just started with a copy on write system like zfs or btrfs so now you need to do a complete wipe of your drive. That's fine you're on nixOS, which is purely declarative, except for the fact you forgot you're not using hjem of course, which is the new hotness in home management, so time for another rewrite. 
