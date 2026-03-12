@@ -11,15 +11,31 @@
       url = "github:/feel-co/hjem";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    import-tree = {
-      url = "github:vic/import-tree";
-    };
     systems = {
       url = "github:nix-systems/default";
     };
   };
 
-  outputs = inputs:
-    inputs.flake-parts.lib.mkFlake {inherit inputs;}
-    (inputs.import-tree ./modules);
+  outputs = {
+    nixpkgs,
+    flake-parts,
+    ...
+  } @ inputs: let
+    inherit (nixpkgs.lib) hasPrefix lists;
+    inherit (nixpkgs.lib.fileset) toList fileFilter;
+    ## This function recursively imports all nix files inside a given dir.
+    mkImport = path: toList (fileFilter (f: f.hasExt "nix" && !(hasPrefix "_" f.name)) path);
+  in
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = ["x86_64-linux" "aarch64-linux"];
+      imports = lists.flatten [
+        (mkImport ./modules)
+      ];
+      perSystem = {system, ...}: {
+        _module.args.pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
+      };
+    };
 }

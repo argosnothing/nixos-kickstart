@@ -1,14 +1,18 @@
 {
   flake.modules.nixos.xfce = {pkgs, ...}: {
-    services.xserver = {
-      enable = true;
+    services = {
       displayManager = {
-        lightdm.enable = true;
         defaultSession = "xfce";
       };
-      desktopManager = {
-        xterm.enable = false;
-        xfce.enable = true;
+      xserver = {
+        enable = true;
+        displayManager = {
+          lightdm.enable = true;
+        };
+        desktopManager = {
+          xterm.enable = false;
+          xfce.enable = true;
+        };
       };
     };
 
